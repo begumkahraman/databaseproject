@@ -1,30 +1,33 @@
+// Express setup
 const express = require('express');
+
+// Middlewares
 const cors = require('cors');
 const dotenv = require('dotenv');
 
-// 1. Rotaları Çağır
+// Route files
 const authRoutes = require('./routes/authRoutes');
 const bookRoutes = require('./routes/bookRoutes');
-const transactionRoutes = require('./routes/transactionRoutes'); 
+const transactionRoutes = require('./routes/transactionRoutes');
 
-// 2. Ayarları Yükle
+// Load environment variables
 dotenv.config();
 
-// 3. Uygulamayı Başlat
+// Create app
 const app = express();
 
-// 4. İzinler (CORS & JSON)
-app.use(cors()); // ✅ KAPILARI AÇAN SİHİRLİ SATIR
-app.use(express.json());
+// Global middlewares
+app.use(cors());          // Enable CORS
+app.use(express.json());  // Parse JSON bodies
 
-// 5. Rotaları Tanımla
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/transactions', transactionRoutes);
 
-// Test
+// Test route
 app.get('/', (req, res) => res.send('Sunucu aktif! 🚀'));
 
-// 6. Başlat
+// Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Sunucu ${PORT} portunda çalışıyor...`));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
