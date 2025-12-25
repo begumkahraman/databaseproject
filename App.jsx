@@ -1,47 +1,43 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// Sayfaları İçeri Aktar
+// Page components
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import BookList from './pages/BookList';
 import AdminPanel from './pages/AdminPanel';
-import MyBooks from './pages/MyBooks'; 
-import TransactionList from './pages/TransactionList'; 
+import MyBooks from './pages/MyBooks';
+import TransactionList from './pages/TransactionList';
 
-// 🆕 YENİ EKLENEN SAYFALAR (Dosyaları oluşturduktan sonra buraya ekliyoruz)
+// Admin pages
 import UserList from './pages/UserList';
 import AdminBookList from './pages/AdminBookList';
 
 function App() {
   return (
+    // Main router wrapper
     <BrowserRouter>
       <Routes>
-        {/* Ana Sayfa */}
+
+        {/* Home page */}
         <Route path="/" element={<Home />} />
-        
-        {/* Kimlik Doğrulama */}
+
+        {/* Authentication pages */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
-        {/* Kitap İşlemleri */}
+
+        {/* Book pages */}
         <Route path="/books" element={<BookList />} />
         <Route path="/my-books" element={<MyBooks />} />
-        
-        {/* Yönetim Paneli (Ana Dashboard) */}
+
+        {/* Admin dashboard */}
         <Route path="/admin" element={<AdminPanel />} />
 
-        {/* --- 🆕 YENİ YÖNETİM SAYFALARI --- */}
-        
-        {/* 1. İşlem Geçmişi */}
+        {/* Admin pages */}
         <Route path="/transactions" element={<TransactionList />} />
-
-        {/* 2. Üye Listesi */}
         <Route path="/admin/users" element={<UserList />} />
-
-        {/* 3. Kitap Yönetimi (Silme/Düzenleme) */}
         <Route path="/admin/books" element={<AdminBookList />} />
-        
+
       </Routes>
     </BrowserRouter>
   );
