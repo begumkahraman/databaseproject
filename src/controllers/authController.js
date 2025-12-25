@@ -1,79 +1,116 @@
+// Import Prisma Client for database operations
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs'); // 'bcrypt' yerine genelde 'bcryptjs' kurmuştuk, hata alırsan burayı kontrol et
+
+// Library used for hashing and comparing passwords
+// We usually use 'bcryptjs' instead of 'bcrypt' to avoid native build issues
+const bcrypt = require('bcryptjs');
+
+// JSON Web Token library for authentication
 const jwt = require('jsonwebtoken');
 
+// Initialize Prisma client
 const prisma = new PrismaClient();
 
-// Kullanıcı Kaydı (Register)
+/* ================================
+   USER REGISTRATION (REGISTER)
+   ================================ */
 exports.register = async (req, res) => {
-  // adminKey'i de buradan alıyoruz (Frontend'den gelecek)
+
+  // Get user data from request body (adminKey comes from frontend)
   const { name, email, password, adminKey } = req.body;
 
   try {
-    // 1. Şifreyi güvenli hale getir (Hash'le)
+    // 1. Hash the password for security
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // --- 🍊 PORTAKAL MANTIĞI 🍊 ---
-    // Varsayılan rol "user" (küçük harf!) olsun
+    // --- 🍊 ORANGE LOGIC 🍊 ---
+    // Default role is "user" (must be lowercase)
     let userRole = "user";
 
-    // Eğer gizli kodu doğru girdiyse rolü "admin" yap
+    // If secret admin key is correct, assign admin role
     if (adminKey === "portakal") {
-        userRole = "admin"; // DİKKAT: Küçük harf olmalı!
+        userRole = "admin"; // IMPORTANT: must be lowercase
     }
     // ---------------------------------
 
-    // 2. Kullanıcıyı veritabanına kaydet
+    // 2. Save the user into the database
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-        role: userRole // Yukarıda belirlediğimiz rolü buraya koyduk
+        role: userRole // Use the role determined above
       }
     });
 
-    res.status(201).json({ message: `Kayıt başarılı! Rolünüz: ${userRole === 'admin' ? 'Yönetici 🍊' : 'Üye'}` });
+    // Send success response with role information
+    res.status(201).json({ 
+      message: `Kayıt başarılı! Rolünüz: ${userRole === 'admin' ? 'Yönetici 🍊' : 'Üye'}` 
+    });
     
   } catch (error) {
+    // Log registration error
     console.error("Kayıt hatası:", error);
-    // Eğer email zaten varsa hata verir
-    res.status(400).json({ error: "Kayıt olunamadı. Bu email kullanılıyor olabilir." });
+
+    // Most likely error: email already exists
+    res.status(400).json({ 
+      error: "Kayıt olunamadı. Bu email kullanılıyor olabilir." 
+    });
   }
 };
 
-// Kullanıcı Girişi (Login)
+/* ================================
+   USER LOGIN
+   ================================ */
 exports.login = async (req, res) => {
+
+  // Get login credentials from request body
   const { email, password } = req.body;
 
   try {
-    // 1. Kullanıcıyı bul
+    // 1. Find user by email
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(404).json({ error: "Kullanıcı bulunamadı." });
 
-    // 2. Şifreyi kontrol et
+    // If user does not exist, return error
+    if (!user) {
+      return res.status(404).json({ error: "Kullanıcı bulunamadı." });
+    }
+
+    // 2. Compare entered password with hashed password
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ error: "Şifre hatalı!" });
 
-    // 3. Token oluştur (Kimlik Kartı)
+    // If password is incorrect, return error
+    if (!validPassword) {
+      return res.status(401).json({ error: "Şifre hatalı!" });
+    }
+
+    // 3. Create JWT token (acts like an identity card)
     const token = jwt.sign(
-      { userId: user.id, role: user.role }, // Frontend userId beklediği için id değil userId kullandım
-      process.env.JWT_SECRET || "gizlisifre", 
+      { 
+        userId: user.id, // Frontend expects userId instead of id
+        role: user.role 
+      },
+      process.env.JWT_SECRET || "gizlisifre",
       { expiresIn: '1d' }
     );
 
-    // 4. Frontend'e gönderilecek paket
+    // 4. Send response data to frontend
     res.json({ 
-        message: "Giriş başarılı", 
-        token, 
-        role: user.role,     // Frontend kontrolü için şart (admin/user)
-        name: user.name,     // Hoşgeldin mesajı için
-        userId: user.id,     // İşlemler için
-        userName: user.name  // Bazı yerlerde userName kullanmıştık, garanti olsun
+        message: "Giriş başarılı",
+        token,
+        role: user.role,     // Used for admin/user checks
+        name: user.name,     // For welcome message
+        userId: user.id,     // Used in transactions
+        userName: user.name  // Ensures compatibility with frontend usage
     });
 
   } catch (error) {
+    // Log login error
     console.error("Giriş hatası:", error);
-    res.status(500).json({ error: "Giriş yapılırken hata oluştu." });
+
+    // Server error response
+    res.status(500).json({ 
+      error: "Giriş yapılırken hata oluştu." 
+    });
   }
 };
